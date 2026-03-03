@@ -13,7 +13,7 @@ export default function Header() {
         WebkitTextFillColor: 'transparent',
         backgroundClip: 'text',
       }}>
-        DCF Valuation Simulator
+        Raid Labs DCF Valuation Simulator
       </h1>
       <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 6 }}>
         33 억원 매수가 기준 | 5개년 월별 매출/비용 예측
