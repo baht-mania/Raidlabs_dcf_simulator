@@ -1,65 +1,76 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import { StreamParams, DCFParams } from '@/lib/types';
+import { DEFAULT_STREAM_PARAMS, DEFAULT_DCF_PARAMS } from '@/lib/constants';
+import { calcMonthlyData, computeDCF } from '@/lib/calculations';
+import Header from '@/components/Header';
+import VerdictBanner from '@/components/VerdictBanner';
+import ControlPanel from '@/components/ControlPanel';
+import SummaryCards from '@/components/SummaryCards';
+import DCFTable from '@/components/DCFTable';
+import ValueComposition from '@/components/ValueComposition';
+import Assumptions from '@/components/Assumptions';
+import MonthlyBreakdown from '@/components/MonthlyBreakdown';
 
 export default function Home() {
+  const [streams, setStreams] = useState<StreamParams>({ ...DEFAULT_STREAM_PARAMS });
+  const [dcfParams, setDCFParams] = useState<DCFParams>({ ...DEFAULT_DCF_PARAMS });
+  const [activeYear, setActiveYear] = useState(2026);
+
+  const yearlyData = useMemo(() => calcMonthlyData(streams, dcfParams), [streams, dcfParams]);
+  const dcfResult = useMemo(() => computeDCF(yearlyData, dcfParams), [yearlyData, dcfParams]);
+
+  const handleStreamChange = useCallback((key: keyof StreamParams, value: number) => {
+    setStreams((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleDCFChange = useCallback((key: keyof DCFParams, value: number) => {
+    setDCFParams((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setStreams({ ...DEFAULT_STREAM_PARAMS });
+    setDCFParams({ ...DEFAULT_DCF_PARAMS });
+    setActiveYear(2026);
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{ padding: '24px 16px' }}>
+      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+        <Header />
+        <VerdictBanner result={dcfResult} purchasePrice={dcfParams.purchasePrice} />
+
+        <div className="main-grid">
+          {/* Left: Control Panel */}
+          <ControlPanel
+            streams={streams}
+            dcfParams={dcfParams}
+            onStreamChange={handleStreamChange}
+            onDCFChange={handleDCFChange}
+            onReset={handleReset}
+          />
+
+          {/* Right: Results */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <SummaryCards result={dcfResult} yearData={yearlyData[0]} />
+            <DCFTable result={dcfResult} />
+            <ValueComposition result={dcfResult} purchasePrice={dcfParams.purchasePrice} />
+            <Assumptions dcfParams={dcfParams} />
+          </div>
+
+          {/* Full Width: Monthly Breakdown */}
+          <MonthlyBreakdown
+            yearlyData={yearlyData}
+            activeYear={activeYear}
+            onYearChange={setActiveYear}
+          />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div style={{ textAlign: 'center', marginTop: 24, fontSize: 11, color: 'var(--text-ghost)' }}>
+          DCF Valuation Model | 슬라이더로 가정값을 변경하면 실시간으로 기업가치가 재계산됩니다
         </div>
-      </main>
+      </div>
     </div>
   );
 }
